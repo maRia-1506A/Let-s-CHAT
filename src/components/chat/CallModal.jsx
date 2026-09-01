@@ -25,23 +25,32 @@ export default function CallModal({
   const [muted, setMuted] = useState(false);
   const [videoOff, setVideoOff] = useState(false);
 
-  const isCaller = activeCall?.caller_id === currentUser?.id;
-  const status = activeCall?.status;
+  const isCaller =
+    (activeCall?.caller_id || activeCall?.initiator_id) === currentUser?.id;
+  const rawStatus = activeCall?.status;
+  const status =
+    rawStatus === "initiating"
+      ? "ringing"
+      : rawStatus === "active"
+      ? "accepted"
+      : rawStatus;
 
   useEffect(() => {
-    if (status === "accepted" && activeCall?.started_at) {
-      const startTime = new Date(activeCall.started_at).getTime();
+    if (status === "accepted") {
+      const startTime = (activeCall?.started_at || activeCall?.created_at)
+        ? new Date(activeCall.started_at || activeCall.created_at).getTime()
+        : Date.now();
       const tick = () =>
         setDuration(Math.floor((Date.now() - startTime) / 1000));
       tick();
       const interval = setInterval(tick, 1000);
       return () => clearInterval(interval);
     }
-  }, [status, activeCall?.started_at]);
+  }, [status, activeCall?.started_at, activeCall?.created_at]);
 
   if (!activeCall) return null;
 
-  const isVideo = activeCall.call_type === "video";
+  const isVideo = (activeCall.call_type || activeCall.type) === "video";
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 animate-fade-in">

@@ -512,6 +512,7 @@ export default function Home() {
 
   const handleDeclineCall = useCallback(async () => {
     if (!activeCall) return;
+    setActiveCall(null);
     try {
       await supabase.from("calls").update({ status: "declined" }).eq("id", activeCall.id);
     } catch (err) {
@@ -521,8 +522,8 @@ export default function Home() {
 
   const handleEndCall = useCallback(async () => {
     if (!activeCall) return;
+    setActiveCall(null);
     if (activeCall.status === "declined" || activeCall.status === "ended") {
-      setActiveCall(null);
       return;
     }
     try {
