@@ -48,19 +48,24 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (email, password) => {
+    const redirectUrl = typeof window !== "undefined" ? `${window.location.origin}/` : undefined;
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        emailRedirectTo: redirectUrl,
+      },
     });
     if (error) throw error;
     return data;
   };
 
   const loginWithGoogle = async (redirectTo) => {
+    const redirectUrl = redirectTo || (typeof window !== "undefined" ? `${window.location.origin}/` : undefined);
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: redirectTo || window.location.origin,
+        redirectTo: redirectUrl,
       },
     });
     if (error) throw error;
@@ -68,7 +73,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   const resetPassword = async (email) => {
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email);
+    const redirectUrl = typeof window !== "undefined" ? `${window.location.origin}/reset-password` : undefined;
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: redirectUrl,
+    });
     if (error) throw error;
     return data;
   };
