@@ -8,6 +8,7 @@ import {
   Video,
   VideoOff,
   Volume2,
+  X,
 } from "lucide-react";
 import UserAvatar from "@/components/chat/UserAvatar";
 import { formatCallDuration } from "@/hooks/usePresence";
@@ -54,6 +55,14 @@ export default function CallModal({
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 animate-fade-in">
+      {/* Top right close button */}
+      <button
+        onClick={onEnd}
+        className="absolute top-6 right-6 z-20 p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+        title="Close Call"
+      >
+        <X className="w-6 h-6" />
+      </button>
       {/* Glow background */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse-ring" />

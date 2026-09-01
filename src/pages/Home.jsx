@@ -126,7 +126,8 @@ export default function Home() {
         const active = (activeCalls || []).find(
           (c) =>
             (c.initiator_id === user.id || c.receiver_id === user.id) &&
-            (c.status === "initiating" || c.status === "active"),
+            (c.status === "initiating" || c.status === "active") &&
+            (c.created_at && (Date.now() - new Date(c.created_at).getTime()) < 2 * 60 * 1000),
         );
         if (active) setActiveCall(active);
       } catch (err) {
