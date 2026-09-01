@@ -49,7 +49,7 @@ export default function CallModal({
     }
   }, [status, activeCall?.started_at, activeCall?.created_at]);
 
-  if (!activeCall) return null;
+  if (!activeCall || status === "ended" || status === "declined") return null;
 
   const isVideo = (activeCall.call_type || activeCall.type) === "video";
 
@@ -89,8 +89,6 @@ export default function CallModal({
               {status === "ringing" &&
                 (isCaller ? "Calling..." : "Incoming call")}
               {status === "accepted" && formatCallDuration(duration)}
-              {status === "declined" && "Call declined"}
-              {status === "ended" && "Call ended"}
             </p>
             {isVideo && status === "accepted" && (
               <p className="text-blue-300/50 text-xs mt-2">
@@ -180,15 +178,6 @@ export default function CallModal({
               <PhoneOff className="w-6 h-6 text-white" />
             </button>
           </div>
-        )}
-
-        {(status === "declined" || status === "ended") && (
-          <button
-            onClick={onEnd}
-            className="mt-8 px-8 py-3 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors text-sm font-medium"
-          >
-            Close
-          </button>
         )}
       </div>
     </div>
