@@ -15,9 +15,12 @@ import NewChatDialog from "@/components/chat/NewChatDialog";
 import CallModal from "@/components/chat/CallModal";
 import ProfileSlideOver from "@/components/chat/ProfileSlideOver";
 
+import { useVisualViewport } from "@/hooks/useVisualViewport";
+
 export default function Home() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { viewportHeight } = useVisualViewport();
   const [profile, setProfile] = useState(null);
   const [profiles, setProfiles] = useState([]);
   const [conversations, setConversations] = useState([]);
@@ -646,7 +649,14 @@ export default function Home() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gradient-to-br from-blue-50/40 to-purple-50/40">
+    <div
+      className="flex h-full h-[100dvh] max-h-[100dvh] w-full overflow-hidden fixed inset-0 md:relative md:h-screen md:max-h-full bg-gradient-to-br from-blue-50/40 to-purple-50/40"
+      style={
+        viewportHeight && typeof window !== "undefined" && window.innerWidth < 768
+          ? { height: `${viewportHeight}px` }
+          : undefined
+      }
+    >
       <div
         className={cn(
           "w-full md:w-80 lg:w-96 shrink-0 border-r border-border",

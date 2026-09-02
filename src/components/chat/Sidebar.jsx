@@ -27,14 +27,45 @@ export default function Sidebar({
 }) {
   const [search, setSearch] = React.useState("");
 
+  const searchTrim = search.trim().toLowerCase();
+
   const filtered = conversations.filter((c) => {
-    if (!search) return true;
-    const otherName = getOtherParticipantName(c, currentUser.id);
+    if (!searchTrim) return true;
+    const pIds = Array.isArray(c.participant_ids)
+      ? c.participant_ids
+      : typeof c.participant_ids === "string"
+      ? JSON.parse(c.participant_ids)
+      : [];
+    const otherId = pIds.find((id) => id !== currentUser.id);
+    const otherProfile = profiles.find(
+      (p) => p.id === otherId || p.user_id === otherId,
+    );
+    const otherName = getOtherParticipantName(c, currentUser.id, profiles);
+    const otherEmail = otherProfile?.email || "";
     return (
-      otherName.toLowerCase().includes(search.toLowerCase()) ||
-      (c.last_message || "").toLowerCase().includes(search.toLowerCase())
+      otherName.toLowerCase().includes(searchTrim) ||
+      otherEmail.toLowerCase().includes(searchTrim) ||
+      (c.last_message || "").toLowerCase().includes(searchTrim)
     );
   });
+
+  const matchingNewUsers = searchTrim
+    ? profiles.filter((p) => {
+        if (p.id === currentUser?.id || p.user_id === currentUser?.id) return false;
+        const nameMatch = (p.display_name || "").toLowerCase().includes(searchTrim);
+        const emailMatch = (p.email || "").toLowerCase().includes(searchTrim);
+        if (!nameMatch && !emailMatch) return false;
+        const hasConv = conversations.some((c) => {
+          const pIds = Array.isArray(c.participant_ids)
+            ? c.participant_ids
+            : typeof c.participant_ids === "string"
+            ? JSON.parse(c.participant_ids)
+            : [];
+          return pIds.includes(p.id) || pIds.includes(p.user_id);
+        });
+        return !hasConv;
+      })
+    : [];
 
   return (
     <div className="flex flex-col h-full bg-card">
@@ -101,7 +132,7 @@ export default function Sidebar({
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search conversations..."
+            placeholder="Search name or email..."
             className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground min-w-0"
           />
         </div>
@@ -109,7 +140,7 @@ export default function Sidebar({
 
       {/* Conversation List */}
       <div className="flex-1 overflow-y-auto scrollbar-thin pb-2">
-        {filtered.length === 0 ? (
+        {filtered.length === 0 && matchingNewUsers.length === 0 ? (
           <div className="text-center px-6 py-12">
             <MessageSquarePlus className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
             <p className="text-sm text-muted-foreground">
@@ -119,83 +150,118 @@ export default function Sidebar({
             </p>
           </div>
         ) : (
-          filtered.map((conv) => {
-            const otherName = getOtherParticipantName(conv, currentUser.id, profiles);
-            const pIds = Array.isArray(conv.participant_ids)
-              ? conv.participant_ids
-              : typeof conv.participant_ids === "string"
-              ? JSON.parse(conv.participant_ids)
-              : [];
-            const otherId = pIds.find((id) => id !== currentUser.id);
-            const otherProfile = profiles.find(
-              (p) => p.id === otherId || p.user_id === otherId,
-            );
-            const isSelected = conv.id === selectedConversationId;
-            const unread = unreadByConv[conv.id] || 0;
-            const lastIsMine = conv.last_sender_id === currentUser.id;
-            const isImg = conv.last_message_type === "image";
-            const isFile = conv.last_message_type === "file";
+          <>
+            {filtered.map((conv) => {
+              const otherName = getOtherParticipantName(conv, currentUser.id, profiles);
+              const pIds = Array.isArray(conv.participant_ids)
+                ? conv.participant_ids
+                : typeof conv.participant_ids === "string"
+                ? JSON.parse(conv.participant_ids)
+                : [];
+              const otherId = pIds.find((id) => id !== currentUser.id);
+              const otherProfile = profiles.find(
+                (p) => p.id === otherId || p.user_id === otherId,
+              );
+              const isSelected = conv.id === selectedConversationId;
+              const unread = unreadByConv[conv.id] || 0;
+              const lastIsMine = conv.last_sender_id === currentUser.id;
+              const isImg = conv.last_message_type === "image";
+              const isFile = conv.last_message_type === "file";
 
-            return (
-              <button
-                key={conv.id}
-                onClick={() => onSelectConversation(conv.id)}
-                className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2.5 transition-colors text-left border-l-4",
-                  isSelected
-                    ? "bg-primary/10 border-primary"
-                    : "border-transparent hover:bg-muted/60",
-                )}
-              >
-                <UserAvatar
-                  name={otherName}
-                  src={otherProfile?.avatar_url}
-                  size="md"
-                  isOnline={isUserOnline(otherProfile?.last_active)}
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-medium truncate">{otherName}</p>
-                    {conv.last_message_at && (
-                      <span className="text-[10px] text-muted-foreground shrink-0">
-                        {new Date(conv.last_message_at).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center justify-between gap-2 mt-0.5">
-                    <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
-                      {lastIsMine && (
-                        <span className="text-muted-foreground/70">You:</span>
-                      )}
-                      {isImg && (
-                        <span className="flex items-center gap-1">
-                          <ImageIcon className="w-3 h-3" />
-                          Photo
+              return (
+                <button
+                  key={conv.id}
+                  onClick={() => onSelectConversation(conv.id)}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-3 py-2.5 transition-colors text-left border-l-4",
+                    isSelected
+                      ? "bg-primary/10 border-primary"
+                      : "border-transparent hover:bg-muted/60",
+                  )}
+                >
+                  <UserAvatar
+                    name={otherName}
+                    src={otherProfile?.avatar_url}
+                    size="md"
+                    isOnline={isUserOnline(otherProfile?.last_active)}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-medium truncate">{otherName}</p>
+                      {conv.last_message_at && (
+                        <span className="text-[10px] text-muted-foreground shrink-0">
+                          {new Date(conv.last_message_at).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
                         </span>
                       )}
-                      {isFile && (
-                        <span className="flex items-center gap-1">
-                          <FileText className="w-3 h-3" />
-                          File
+                    </div>
+                    <div className="flex items-center justify-between gap-2 mt-0.5">
+                      <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                        {lastIsMine && (
+                          <span className="text-muted-foreground/70">You:</span>
+                        )}
+                        {isImg && (
+                          <span className="flex items-center gap-1">
+                            <ImageIcon className="w-3 h-3" />
+                            Photo
+                          </span>
+                        )}
+                        {isFile && (
+                          <span className="flex items-center gap-1">
+                            <FileText className="w-3 h-3" />
+                            File
+                          </span>
+                        )}
+                        {!isImg &&
+                          !isFile &&
+                          (conv.last_message || "Start chatting")}
+                      </p>
+                      {unread > 0 && (
+                        <span className="min-w-[18px] h-[18px] px-1 bg-primary text-white text-[10px] font-bold rounded-full flex items-center justify-center shrink-0">
+                          {unread > 9 ? "9+" : unread}
                         </span>
                       )}
-                      {!isImg &&
-                        !isFile &&
-                        (conv.last_message || "Start chatting")}
-                    </p>
-                    {unread > 0 && (
-                      <span className="min-w-[18px] h-[18px] px-1 bg-primary text-white text-[10px] font-bold rounded-full flex items-center justify-center shrink-0">
-                        {unread > 9 ? "9+" : unread}
-                      </span>
-                    )}
+                    </div>
                   </div>
-                </div>
-              </button>
-            );
-          })
+                </button>
+              );
+            })}
+
+            {matchingNewUsers.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-border px-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                  People
+                </p>
+                {matchingNewUsers.map((userProf) => (
+                  <button
+                    key={userProf.id}
+                    onClick={() => onNewChat(userProf)}
+                    className="w-full flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-muted/60 transition-colors text-left"
+                  >
+                    <UserAvatar
+                      name={userProf.display_name || userProf.email}
+                      src={userProf.avatar_url}
+                      size="md"
+                      isOnline={isUserOnline(userProf.last_active)}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {userProf.display_name || "User"}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {isUserOnline(userProf.last_active) ? "Active now" : "Offline"}
+                      </p>
+                    </div>
+                    <span className="text-xs text-primary font-medium px-2 py-1 bg-primary/10 rounded-lg shrink-0">
+                      Chat
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

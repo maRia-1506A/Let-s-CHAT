@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import UserAvatar from "@/components/chat/UserAvatar";
 import MessageBubble from "@/components/chat/MessageBubble";
 import MessageInput from "@/components/chat/MessageInput";
+import { useVisualViewport } from "@/hooks/useVisualViewport";
 import {
   isUserOnline,
   getOtherParticipantName,
@@ -22,15 +23,26 @@ export default function ChatWindow({
 }) {
   const messagesEndRef = useRef(null);
   const scrollContainerRef = useRef(null);
+  const { viewportHeight, isKeyboardOpen } = useVisualViewport();
 
-  useEffect(() => {
+  const scrollToBottom = (behavior = "smooth") => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({
-        behavior: "smooth",
+        behavior,
         block: "end",
       });
     }
+  };
+
+  useEffect(() => {
+    scrollToBottom("smooth");
   }, [messages]);
+
+  useEffect(() => {
+    if (viewportHeight) {
+      scrollToBottom("auto");
+    }
+  }, [viewportHeight]);
 
   if (!conversation) {
     return (
@@ -58,9 +70,16 @@ export default function ChatWindow({
   let lastDate = "";
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-gradient-to-br from-blue-50/30 to-purple-50/30">
+    <div
+      className="flex-1 flex flex-col h-full h-[100dvh] max-h-[100dvh] overflow-hidden min-h-0 bg-gradient-to-br from-blue-50/30 to-purple-50/30"
+      style={
+        viewportHeight && typeof window !== "undefined" && window.innerWidth < 768
+          ? { height: `${viewportHeight}px` }
+          : undefined
+      }
+    >
       {/* Header */}
-      <div className="flex items-center gap-3 px-3 sm:px-4 py-2.5 border-b border-border bg-card/80 backdrop-blur-md">
+      <div className="shrink-0 flex items-center gap-3 px-3 sm:px-4 py-2.5 border-b border-border bg-card/80 backdrop-blur-md">
         <button
           onClick={onBack}
           className="md:hidden p-1.5 rounded-full hover:bg-muted"
@@ -107,7 +126,7 @@ export default function ChatWindow({
       {/* Messages */}
       <div
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto scrollbar-thin py-2"
+        className="flex-1 min-h-0 overflow-y-auto scrollbar-thin py-2"
       >
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center px-6">
@@ -153,7 +172,9 @@ export default function ChatWindow({
       </div>
 
       {/* Input */}
-      <MessageInput onSend={onSend} />
+      <div className="shrink-0">
+        <MessageInput onSend={onSend} onFocusInput={() => scrollToBottom("auto")} />
+      </div>
     </div>
   );
 }

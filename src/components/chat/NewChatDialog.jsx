@@ -25,15 +25,14 @@ export default function NewChatDialog({
 
   if (!open) return null;
 
-  const filtered = profiles.filter(
-    (p) =>
-      p.id !== currentUser?.id &&
-      p.user_id !== currentUser?.id &&
-      (search.trim() === "" ||
-        (p.display_name ?? p.email ?? "")
-          .toLowerCase()
-          .includes(search.toLowerCase())),
-  );
+  const filtered = profiles.filter((p) => {
+    if (p.id === currentUser?.id || p.user_id === currentUser?.id) return false;
+    if (!search.trim()) return true;
+    const q = search.toLowerCase().trim();
+    const nameMatch = (p.display_name || "").toLowerCase().includes(q);
+    const emailMatch = (p.email || "").toLowerCase().includes(q);
+    return nameMatch || emailMatch;
+  });
 
   const hasConversation = (profile) => {
     return existingConversations.some(
@@ -68,7 +67,7 @@ export default function NewChatDialog({
               ref={dialogRef}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search people..."
+              placeholder="Search by name or email..."
               className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             />
           </div>
@@ -100,7 +99,7 @@ export default function NewChatDialog({
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">
-                      {profile.display_name || profile.email}
+                      {profile.display_name || "User"}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {isUserOnline(profile.last_active)
@@ -109,7 +108,7 @@ export default function NewChatDialog({
                     </p>
                   </div>
                   {alreadyChatting && (
-                    <span className="text-xs text-muted-foreground px-2 py-1 bg-muted rounded-full">
+                    <span className="text-xs text-muted-foreground px-2 py-1 bg-muted rounded-full shrink-0">
                       Existing
                     </span>
                   )}

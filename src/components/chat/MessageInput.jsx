@@ -3,12 +3,19 @@ import { cn } from "@/lib/utils";
 import { Send, ImagePlus, Paperclip, X, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
-export default function MessageInput({ onSend }) {
+export default function MessageInput({ onSend, onFocusInput }) {
   const [text, setText] = useState("");
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState(null);
   const fileInputRef = useRef(null);
   const imageInputRef = useRef(null);
+
+  const handleFocus = () => {
+    onFocusInput?.();
+    setTimeout(() => {
+      onFocusInput?.();
+    }, 150);
+  };
 
   const handleSend = () => {
     if (!text.trim()) return;
@@ -69,7 +76,7 @@ export default function MessageInput({ onSend }) {
   };
 
   return (
-    <div className="border-t border-border bg-white/80 backdrop-blur-md px-3 py-3">
+    <div className="border-t border-border bg-white/90 backdrop-blur-md px-3 pt-3 pb-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
       {preview && (
         <div className="mb-2 flex items-center gap-2 bg-muted rounded-xl p-2 animate-fade-in">
           <img
@@ -130,6 +137,7 @@ export default function MessageInput({ onSend }) {
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
+            onFocus={handleFocus}
             onKeyDown={handleKeyDown}
             placeholder="Type a message..."
             rows={1}
