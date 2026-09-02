@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 const AVATAR_COLORS = [
@@ -48,12 +48,22 @@ export default function UserAvatar({
   isOnline,
   className,
 }) {
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [src]);
+
+  const showImage = Boolean(src) && !imgError;
+
   return (
     <div className={cn("relative inline-flex shrink-0", className)}>
-      {src ? (
+      {showImage ? (
         <img
           src={src}
           alt={name || "User"}
+          referrerPolicy="no-referrer"
+          onError={() => setImgError(true)}
           className={cn(
             "rounded-full object-cover ring-1 ring-black/5",
             SIZE_CLASSES[size],
@@ -62,7 +72,7 @@ export default function UserAvatar({
       ) : (
         <div
           className={cn(
-            "rounded-full flex items-center justify-center text-white font-semibold shadow-sm",
+            "rounded-full flex items-center justify-center text-white font-semibold shadow-sm select-none shrink-0",
             SIZE_CLASSES[size],
             getAvatarColor(name),
           )}

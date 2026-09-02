@@ -52,7 +52,9 @@ export default function Register() {
 
   const handleGoogle = async () => {
     try {
-      await loginWithGoogle(window.location.origin + safeReturnTo());
+      const origin = window.location.origin;
+      const target = safeReturnTo() && safeReturnTo() !== "/" ? `${origin}${safeReturnTo()}` : origin;
+      await loginWithGoogle(target);
     } catch (err) {
       setError(err.message || "Google registration failed");
     }

@@ -42,21 +42,33 @@ export default function Sidebar({
       <div className="flex items-center justify-between p-3 border-b border-border bg-gradient-to-r from-blue-50 to-purple-50">
         <button
           onClick={onOpenProfile}
-          className="flex items-center gap-2 group rounded-xl p-1 -m-1 hover:bg-white/60 transition-colors text-left"
+          className="flex items-center gap-2.5 group rounded-xl p-1 -m-1 hover:bg-white/60 transition-colors text-left min-w-0"
         >
           <UserAvatar
             name={
-              profile?.full_name || currentUser?.full_name || currentUser?.email
+              profile?.display_name ||
+              profile?.full_name ||
+              currentUser?.user_metadata?.full_name ||
+              currentUser?.user_metadata?.name ||
+              currentUser?.email
             }
-            src={profile?.avatar_url}
+            src={
+              profile?.avatar_url ||
+              currentUser?.user_metadata?.avatar_url ||
+              currentUser?.user_metadata?.picture
+            }
             size="md"
             isOnline={true}
           />
           <div className="min-w-0">
-            <p className="text-sm font-semibold truncate max-w-[120px] group-hover:text-primary transition-colors">
-              {profile?.full_name || currentUser?.full_name || "You"}
+            <p className="text-sm font-semibold truncate max-w-[140px] group-hover:text-primary transition-colors text-slate-900">
+              {profile?.display_name ||
+                profile?.full_name ||
+                currentUser?.user_metadata?.full_name ||
+                currentUser?.user_metadata?.name ||
+                "You"}
             </p>
-            <p className="text-xs text-green-600 font-medium">Active now</p>
+            <p className="text-xs text-emerald-600 font-medium">Active now</p>
           </div>
         </button>
         <div className="flex items-center gap-1">

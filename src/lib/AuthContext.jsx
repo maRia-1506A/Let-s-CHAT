@@ -61,7 +61,11 @@ export const AuthProvider = ({ children }) => {
   };
 
   const loginWithGoogle = async (redirectTo) => {
-    const redirectUrl = redirectTo || (typeof window !== "undefined" ? `${window.location.origin}/` : undefined);
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    let redirectUrl = origin;
+    if (redirectTo) {
+      redirectUrl = redirectTo.startsWith("http") ? redirectTo : `${origin}${redirectTo}`;
+    }
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {

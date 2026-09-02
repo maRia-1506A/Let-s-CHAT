@@ -39,7 +39,9 @@ export default function Login() {
 
   const handleGoogle = async () => {
     try {
-      await loginWithGoogle(window.location.origin + returnTo);
+      const origin = window.location.origin;
+      const target = returnTo && returnTo !== "/" ? `${origin}${returnTo}` : origin;
+      await loginWithGoogle(target);
     } catch (err) {
       setError(err.message || "Google sign in failed");
     }

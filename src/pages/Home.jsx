@@ -57,12 +57,15 @@ export default function Home() {
           .eq("id", user.id)
           .maybeSingle();
 
+        const googleName =
+          user.user_metadata?.full_name ||
+          user.user_metadata?.name ||
+          user.user_metadata?.display_name;
+        const googleAvatar =
+          user.user_metadata?.avatar_url || user.user_metadata?.picture;
+
         if (!myProfile) {
-          const defaultName =
-            user.user_metadata?.full_name ||
-            user.user_metadata?.name ||
-            user.email?.split("@")[0] ||
-            "User";
+          const defaultName = googleName || user.email?.split("@")[0] || "User";
 
           const { data: created, error: createErr } = await supabase
             .from("profiles")
@@ -71,6 +74,7 @@ export default function Home() {
               user_id: user.id,
               email: user.email,
               display_name: defaultName,
+              avatar_url: googleAvatar || null,
               last_active: new Date().toISOString(),
               is_online: true,
             })
@@ -78,6 +82,24 @@ export default function Home() {
             .single();
 
           if (!createErr) myProfile = created;
+        } else {
+          // Sync missing or updated Google OAuth details if present
+          const updates = {};
+          if (googleAvatar && myProfile.avatar_url !== googleAvatar) {
+            updates.avatar_url = googleAvatar;
+          }
+          if (googleName && (!myProfile.display_name || myProfile.display_name === "User")) {
+            updates.display_name = googleName;
+          }
+          if (Object.keys(updates).length > 0) {
+            const { data: updated } = await supabase
+              .from("profiles")
+              .update(updates)
+              .eq("id", user.id)
+              .select()
+              .single();
+            if (updated) myProfile = updated;
+          }
         }
 
         if (cancelled) return;
